@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Скупка [pre-beta 4.5]</title>
+<style>
+:root {
+  --bg: #090d16;
+  --panel: rgba(18, 26, 43, 0.75);
+  --card: rgba(26, 36, 59, 0.6);
+  --card-border: rgba(0, 242, 254, 0.18);
+  --ink: #f0f4f8;
+  --mu: #8b9bb4;
+  --acc: #00f2fe;
+  --acc2: #4facfe;
+  --neon-pink: #ff007f;
+  --ok: #00e676;
+  --bad: #ff3366;
+  --warn: #ffab00;
+  --nv: #0a101d;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+html, body { height: 100%; }
+body {
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(255, 0, 127, 0.1), transparent 40%),
+    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+#app { height: 100%; display: flex; flex-direction: column; }
+
+header {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 10px 14px; background: rgba(10, 16, 29, 0.85);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 242, 254, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.15);
+  z-index: 10;
+}
+.br { font-weight: 900; font-size: 16px; letter-spacing: 0.5px; background: linear-gradient(45deg, var(--acc), var(--neon-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.br small { display: block; font-weight: 600; font-size: 10px; color: var(--mu); -webkit-text-fill-color: var(--mu); }
+
+.st { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; font-size: 11px; font-weight: 700; }
+.st div {
+  background: rgba(255, 255, 255, 0.05); padding: 4px 8px; border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+main { flex: 1; overflow-y: auto; padding: 14px; scroll-behavior: smooth; }
+.sc { display: none; opacity: 0; transition: opacity 0.3s ease; }
+.sc.on { display: block; opacity: 1; }
+
+h3 { margin-bottom: 8px; font-size: 18px; font-weight: 800; letter-spacing: 0.3px; display: flex; align-items: center; gap: 8px; }
+.mu { font-size: 12px; color: var(--mu); margin-bottom: 10px; }
+
+.g { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 10px; }
+
+.c {
+  background: var(--card); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--ink); border-radius: 14px; border: 1px solid var(--card-border);
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); transition: transform 0.2s ease, border-color 0.2s ease;
+  position: relative; overflow: hidden;
+}
+.c:hover { transform: translateY(-2px); border-color: var(--acc); }
+.c::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(180deg, var(--acc), var(--neon-pink)); }
+
+.t { font-weight: 800; font-size: 15px; color: #fff; }
+.pr { font-weight: 800; font-size: 16px; color: var(--ok); text-shadow: 0 0 10px rgba(0, 230, 118, 0.3); }
+
+.tag { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: rgba(0, 242, 254, 0.1); border: 1px solid rgba(0, 242, 254, 0.3); color: var(--acc); align-self: flex-start; }
+.tag.bad { background: rgba(255, 51, 102, 0.1); border-color: rgba(255, 51, 102, 0.3); color: var(--bad); }
+.tag.warn { background: rgba(255, 171, 0, 0.1); border-color: rgba(255, 171, 0, 0.3); color: var(--warn); }
+
+.b {
+  border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 12px;
+  background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #000; cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3); transition: all 0.2s ease; display: inline-flex;
+  align-items: center; justify-content: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.b:active { transform: scale(0.96); box-shadow: none; }
+.b:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.b.ok { background: linear-gradient(135deg, #00e676, #00b0ff); color: #000; box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3); }
+.b.bad { background: linear-gradient(135deg, #ff3366, #ff007f); color: #fff; box-shadow: 0 4px 15px rgba(255, 51, 102, 0.3); }
+.b.g2 { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: none; }
+.b.g2:hover { background: rgba(255, 255, 255, 0.15); }
+
+.row { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+nav { display: flex; background: var(--nv); border-top: 1px solid rgba(0, 242, 254, 0.2); backdrop-filter: blur(12px); overflow-x: auto; }
+nav div { flex: 1; min-width: 65px; text-align: center; padding: 10px 2px; font-size: 9px; font-weight: 700; color: var(--mu); cursor: pointer; transition: all 0.2s ease; position: relative; }
+nav div.on { color: var(--acc); text-shadow: 0 0 8px rgba(0, 242, 254, 0.5); }
+nav div.on::after { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; background: var(--acc); box-shadow: 0 0 10px var(--acc); }
+nav span { display: block; font-size: 16px; margin-bottom: 2px; }
+
+.ov { position: fixed; inset: 0; background: rgba(5, 8, 15, 0.85); backdrop-filter: blur(10px); z-index: 50; display: none; justify-content: center; align-items: center; padding: 14px; }
+.mb { background: rgba(18, 26, 43, 0.95); border: 1px solid var(--acc); border-radius: 20px; padding: 18px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 0 30px rgba(0, 242, 254, 0.2); }
+
+.chat { height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.4); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.m { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; }
+.ms { background: rgba(255, 255, 255, 0.1); color: #fff; align-self: flex-start; border-bottom-left-radius: 2px; }
+.mu2 { background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #000; font-weight: 700; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+.ph { background: #0c1424; border: 2px solid rgba(0, 242, 254, 0.3); border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+.cp { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.cp.bd { border-color: var(--bad); background: rgba(255, 51, 102, 0.05); }
+.cp.gd { border-color: var(--ok); background: rgba(0, 230, 118, 0.05); }
+
+.sw { width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(#fff, #777); border: 2px solid #000; cursor: pointer; box-shadow: 0 0 10px rgba(255,255,255,0.5); transition: transform 0.2s; }
+.sw.off { opacity: 0.15; box-shadow: none; transform: scale(0.8); }
+
+.bar { position: relative; height: 26px; background: rgba(0, 0, 0, 0.6); border-radius: 13px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); }
+.zn { position: absolute; top: 0; bottom: 0; background: rgba(0, 230, 118, 0.5); border: 1px solid var(--ok); }
+.mk { position: absolute; top: 0; bottom: 0; width: 6px; background: #fff; box-shadow: 0 0 10px #fff; border-radius: 3px; }
+.pg { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--acc), var(--neon-pink)); }
+
+#toast { position: fixed; left: 14px; right: 14px; top: calc(env(safe-area-inset-top, 0px) + 65px); z-index: 99; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+#toast div { background: rgba(18, 26, 43, 0.95); color: #fff; border-left: 4px solid var(--acc); border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px); animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+
+@keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+#menu { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; padding: 24px; text-align: center; }
+select, input[type=text] { width: 100%; max-width: 320px; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(0, 242, 254, 0.3); background: rgba(26, 36, 59, 0.8); color: #fff; outline: none; font-size: 13px; }
+select:focus, input[type=text]:focus { border-color: var(--acc); box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="br">Скупка [pre-beta 4.5]<small>by @nonecult</small></div>
+    <div class="st">
+      <div id="hR">⭐ 5.0</div>
+      <div id="hK">🔧 ур.0</div>
+      <div id="hD">📅 день 1</div>
+      <div id="hB">💰 0</div>
+    </div>
+  </header>
+  
+  <main>
+    <!-- МАРКЕТ & АУКЦИОНЫ -->
+    <div id="s-market" class="sc on">
+      <div class="row">
+        <h3 id="mT">🛒 Маркет</h3>
+        <button class="b g2" id="dayBtn" onclick="skip()"></button>
+      </div>
+      <div class="mu">Покупай б/у гаджеты, торгуйся в чате и ищи скрытые дефекты.</div>
+      <div id="mL" class="g"></div>
+      
+      <h3 style="margin-top:20px">⚖️ Аукционы конфиската</h3>
+      <div class="mu">Перекупай контейнеры с заблокированной техникой или соревнуйся с перекупщиками.</div>
+      <div id="aucL" class="g"></div>
+      
+      <h3 style="margin-top:20px">🕵️‍♂️ Тёмный рынок</h3>
+      <div id="darkL" class="g"></div>
+    </div>
+    
+    <!-- КЛИЕНТЫ & САЙТ -->
+    <div id="s-clients" class="sc">
+      <h3>🚶‍♂️ Очередь клиентов</h3>
+      <div class="mu">Живые заказы на ремонт в мастерской.</div>
+      <div id="cL" class="g"></div>
+      
+      <h3 style="margin-top:20px">🌐 Онлайн-сайт Скупки</h3>
+      <div class="c">
+        <div class="t">Продвижение и авто-оценка</div>
+        <div class="mu">Запускай рекламу в сети, чтобы клиенты сами предлагали технику через сайт.</div>
+        <div class="row">
+          <div class="pr" id="webStatus">Реклама выключена</div>
+          <button class="b" onclick="toggleWeb()">Запустить таргет (5000 ₸/день)</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- СКЛАД -->
+    <div id="s-inv" class="sc">
+      <div class="row">
+        <h3>📦 Склад техники</h3>
+        <select id="invSort" style="max-width:140px;padding:6px 10px;font-size:11px" onchange="rI()">
+          <option value="all">Все</option>
+          <option value="ready">Готовые</option>
+          <option value="broken">В ремонте</option>
+        </select>
+      </div>
+      <div id="iL" class="g"></div>
+    </div>
+    
+    <!-- ЗАПЧАСТИ -->
+    <div id="s-parts" class="sc">
+      <h3>🔩 Запчасти & Ноутбуки/Консоли</h3>
+      <p class="mu" id="pS"></p>
+      <div id="pL" class="g"></div>
+    </div>
+    
+    <!-- ПРОКАЧКА & ФИЛИАЛЫ -->
+    <div id="s-upg" class="sc">
+      <h3>🏢 Развитие бизнеса & Филиалы</h3>
+      <div class="mu">Улучшай точку, покупай оборудование, нанимай персонал и создавай сеть филиалов.</div>
+      
+      <div class="c" style="margin-bottom:12px">
+        <div class="t" id="locTitle">Текущая точка: Гараж</div>
+        <div class="mu" id="locDesc">Минимальная аренда.</div>
+        <div class="row">
+          <div class="pr" id="locCost">−</div>
+          <button class="b" id="locBtn" onclick="upgLoc()">Улучшить</button>
+        </div>
+      </div>
+      
+      <h3>🌐 Сеть филиалов и Франшиза</h3>
+      <div class="c" style="margin-bottom:12px">
+        <div class="t" id="branchInfo">Филиалов открыто: 0 / Доход: 0/день</div>
+        <button class="b ok" onclick="buyBranch()">Открыть новый филиал (300 000)</button>
+      </div>
+      
+      <h3>🛠 Инструменты</h3>
+      <div id="eqL" class="g"></div>
+      
+      <h3 style="margin-top:16px">👨‍🔧 Персонал</h3>
+      <div id="empL" class="g"></div>
+    </div>
+    
+    <!-- ЕЩЁ / МУЗЫКА / СТАТИСТИКА -->
+    <div id="s-more" class="sc">
+      <h3>🎵 Музыкальный плеер</h3>
+      <div class="c">
+        <div class="t" id="tN">Плейлист пуст</div>
+        <input type="text" id="tTitle" placeholder="Название трека">
+        <input type="text" id="ur" placeholder="Прямая ссылка на MP3">
+        <div class="row">
+          <button class="b g2" style="flex:1" onclick="addU()">Добавить по ссылке</button>
+          <label class="b g2" style="flex:1;text-align:center">📁 Из файла<input type="file" multiple accept="audio/*" style="display:none" onchange="addF(this.files)"></label>
+        </div>
+        <button class="b ok" onclick="loadPresets()">✨ Загрузить подборку</button>
+        <div class="row" style="margin-top:6px">
+          <button class="b g2" onclick="nt()">⏭ Дальше</button>
+          <button class="b" id="tB" onclick="tg()">▶ Играть</button>
+        </div>
+      </div>
+      <div id="tL" class="g" style="max-height:160px;overflow-y:auto"></div>
+      
+      <h3 style="margin-top:16px">📊 Статистика</h3>
+      <div class="c" id="stBox"></div>
+      
+      <button class="b bad" style="margin-top:20px;width:100%" onclick="if(confirm('Сбросить весь прогресс?')){try{localStorage.removeItem(K)}catch(e){}location.reload()}">Сбросить прогресс</button>
+      <div style="text-align:center;font-size:11px;color:var(--mu);margin-top:14px">Скупка [pre-beta 4.5] • Разработано @nonecult</div>
+    </div>
+  </main>
+  
+  <nav>
+    <div class="on" onclick="tab('market',this)"><span>🛒</span>Маркет</div>
+    <div onclick="tab('clients',this)"><span>🚶‍♂️</span>Клиенты</div>
+    <div onclick="tab('inv',this)"><span>📦</span>Склад</div>
+    <div onclick="tab('parts',this)"><span>🔩</span>Запчасти</div>
+    <div onclick="tab('upg',this)"><span>🏢</span>Бизнес</div>
+    <div onclick="tab('more',this)"><span>🎵</span>Музыка</div>
+  </nav>
+</div>
+
+<!-- МОДАЛКА ЧАТА -->
+<div id="chatM" class="ov">
+  <div class="mb">
+    <h4 id="chT" style="color:var(--acc)"></h4>
+    <div id="chB" class="chat"></div>
+    <div id="chA" style="display:flex;flex-direction:column;gap:6px"></div>
+    <button class="b g2" onclick="cm('chatM')">Закрыть</button>
+  </div>
+</div>
+
+<!-- МОДАЛКА ВЕРСТАКА -->
+<div id="bM" class="ov">
+  <div class="mb" style="max-width:520px">
+    <h4 id="bT" style="color:var(--acc)">Верстак</h4>
+    <div id="bI" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="b g2" onclick="clB()">Закрыть верстак</button>
+  </div>
+</div>
+
+<!-- МОДАЛКА БАНКРОТСТВА -->
+<div id="goM" class="ov" style="z-index:95">
+  <div class="mb" style="text-align:center">
+    <h3 style="color:var(--bad)">⚠️ БАНКРОТСТВО</h3>
+    <p>Баланс ушёл в минус на дне <b id="goD"></b>. Скупку закрыли за долги.</p>
+    <button class="b" onclick="location.reload()">Начать заново</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ГЛАВНОЕ МЕНЮ -->
+<div id="menu">
+  <div style="font-size:32px;font-weight:900;background:linear-gradient(45deg, var(--acc), var(--neon-pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">СКУПКА</div>
+  <p style="font-size:13px;opacity:0.8;max-width:320px">Pre-beta 4.5: Смартфоны, ноутбуки, консоли, аукционы конфиската, филиалы и схемы плат.</p>
+  <div style="font-size:11px;color:var(--acc)">Разработчик: @nonecult</div>
+  
+  <select id="cs">
+    <option value="KZ">🇰🇿 Казахстан · OLX.kz · ₸</option>
+    <option value="RU">🇷🇺 Россия · Авито · ₽</option>
+    <option value="US">🇺🇸 США · OfferUp · $</option>
+  </select>
+  
+  <button class="b" style="width:100%;max-width:320px" onclick="newGame()">Новая игра</button>
+  <button class="b g2" id="cont" style="width:100%;max-width:320px;display:none" onclick="start()">Продолжить</button>
+</div>
+
+<script>
+const K='skupka_prebeta45',$=id=>document.getElementById(id);
+
+const CFG = {
+  KZ: { n: 'OLX.kz', s: '₸', r: 1, i: 200000 },
+  RU: { n: 'Авито', s: '₽', r: 0.2, i: 40000 },
+  US: { n: 'OfferUp', s: '$', r: 0.002, i: 500 }
+};
+
+const P = {
+  screen: { n: 'Дисплей', e: '📱', p: 12000 },
+  battery: { n: 'Батарея', e: '🔋', p: 6000 },
+  board: { n: 'Плата', e: '🔲', p: 22000 },
+  camera: { n: 'Камера', e: '📷', p: 9000 },
+  flex: { n: 'Шлейф', e: '🧬', p: 5000 },
+  // Новые запчасти для ноутов/консолей
+  thermal: { n: 'Термопаста', e: '🧪', p: 4000 },
+  ssd: { n: 'SSD / Память', e: '💾', p: 15000 },
+  sticks: { n: 'Стики геймпада', e: '🕹️', p: 7000 }
+};
+
+const LOCATIONS = [
+  { n: 'Гараж', rent: 2000, desc: 'Тесный гараж.' },
+  { n: 'Арендованная точка', rent: 6000, cost: 60000, desc: 'Павильон в ТЦ.' },
+  { n: 'Сервисный центр', rent: 18000, cost: 250000, desc: 'Полноценный СЦ.' },
+  { n: 'Техно-Гигант', rent: 50000, cost: 900000, desc: 'Элитный техно-комплекс.' }
+];
+
+const FW = { ios: ['iOS 16.7', 'iOS 17.6', 'iOS 18.1'], and: ['Android 13', 'Android 14', 'Android 15'], pc: ['Windows 10', 'Windows 11', 'macOS Sonoma'] };
+
+const CAT = [
+  { n: 'iPhone Air 512GB', b: 120000, os: 'ios', lock: 1, br: [] },
+  { n: 'Redmi Note 14', b: 30000, os: 'and', br: ['battery'] },
+  { n: 'MacBook Air M1', b: 220000, os: 'pc', br: ['thermal'], isPC: true },
+  { n: 'PlayStation 5', b: 180000, os: 'pc', br: ['sticks'], isConsole: true },
+  { n: 'Samsung S24 Ultra', b: 140000, os: 'and', lock: 1, br: ['battery'] },
+  { n: 'ASUS ROG Gaming Laptop', b: 350000, os: 'pc', br: ['thermal', 'ssd'], isPC: true }
+];
+
+const PRESETS = [
+  { n: 'Chill Synthwave Beat', u: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=synthwave-80s-110045.mp3' },
+  { n: 'Lo-Fi Workshop', u: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=lofi-study-112191.mp3' }
+];
+
+let s, ch=null, bn={n:0}, fl=null, ft, dl=12000, tracks=[];
+const au = new Audio(); au.onended = () => nt();
+
+const fm = a => {
+  const c = CFG[s.c];
+  return Math.round(a * c.r).toLocaleString('ru-RU') + ' ' + c.s;
+};
+
+const lvl = () => Math.floor(s.xp / 4);
+const pn = p => P[p].e + ' ' + P[p].n;
+
+function toast(m) {
+  const d = document.createElement('div');
+  d.textContent = m;
+  $('toast').appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
+
+function save() {
+  try {
+    s.tracks = tracks.filter(t => !t.u.startsWith('blob:'));
+    localStorage.setItem(K, JSON.stringify(s));
+  } catch(e) {}
+}
+
+function newItem() {
+  const d = CAT[Math.floor(Math.random()*CAT.length)];
+  const mult = 0.85 + Math.random()*0.3;
+  const price = Math.round(d.b * mult);
+  let hid = null;
+  
+  if (Math.random() < 0.35) {
+    const o = Object.keys(P).filter(p => !d.br.includes(p));
+    hid = o[Math.floor(Math.random()*o.length)];
+  }
+  
+  const wet = Math.random() < 0.18 ? 1 : 0;
+  
+  s.market.push({
+    id: s.nid++, name: d.n, os: d.os, fw: Math.floor(Math.random()*3),
+    lock: d.lock || 0, br: [...d.br], hid, wet, price,
+    isPC: d.isPC || false, isConsole: d.isConsole || false,
+    val: Math.round(d.b * (d.lock?1.5:1.6) * (0.9 + Math.random()*0.2)),
+    min: Math.round(price * (0.75 + Math.random()*0.2) * (1.08 - s.rep*0.02)),
+    tries: 3
+  });
+}
+
+function newAuction() {
+  const lotName = ['Контейнер с таможни (5 шт. хлам)', 'Ликвидация склада ломбарда', 'Партия залитых ноутбуков'][Math.floor(Math.random()*3)];
+  s.auctions.push({
+    id: s.nid++, name: lotName,
+    bid: Math.round(80000 + Math.random()*150000),
+    itemsCount: 3 + Math.floor(Math.random()*3)
+  });
+}
+
+function newDarkItem() {
+  const d = CAT[Math.floor(Math.random()*CAT.length)];
+  const price = Math.round(d.b * 0.4);
+  const type = Math.random();
+  s.darkMarket.push({
+    id: s.nid++, name: d.n + ' (Без документов)',
+    price, val: Math.round(d.b * 1.5),
+    isFake: type < 0.2, isStolen: type >= 0.2 && type < 0.5,
+    br: ['screen', 'board'], isPC: d.isPC||false
+  });
+}
+
+function newClient() {
+  if (s.clients.length >= 4) return;
+  const d = CAT[Math.floor(Math.random()*CAT.length)];
+  const prob = Object.keys(P)[Math.floor(Math.random()*Object.keys(P).length)];
+  const pay = Math.round(P[prob].p * 1.8 + 6000);
+  s.clients.push({
+    id: s.nid++, name: d.n, prob, pay,
+    text: `Здравствуйте! Сломалось (${P[prob].n}). Почините срочно?`
+  });
+}
+
+function newGame() {
+  const c = $('cs').value;
+  s = {
+    c, bal: CFG[c].i, rep: 5.0, day: 1, xp: 0,
+    market: [], auctions: [], darkMarket: [], clients: [], inv: [],
+    parts: { screen: 0, battery: 0, board: 0, camera: 0, flex: 0, thermal: 0, ssd: 0, sticks: 0 },
+    loc: 0, branches: 0, webActive: 0,
+    eq: { station: 0, bath: 0, meter: 0, tools: 0 },
+    emp: { courier: 0, master: 0 },
+    stats: { earned: 0, fixed: 0, flashed: 0 },
+    music: false, tr: 0, nid: 1, tracks: []
+  };
+  
+  for(let i=0; i<4; i++) newItem();
+  for(let i=0; i<2; i++) newAuction();
+  for(let i=0; i<2; i++) newDarkItem();
+  for(let i=0; i<2; i++) newClient();
+  
+  save(); start();
+}
+
+function start() {
+  $('menu').style.display = 'none';
+  if (s.tracks && s.tracks.length) tracks = s.tracks;
+  else loadPresets();
+  rAll();
+}
+
+try {
+  const r = localStorage.getItem(K);
+  if(r) { s = JSON.parse(r); $('cont').style.display = 'block'; }
+} catch(e){}
+
+function rAll() { rH(); rM(); rC(); rI(); rP(); rU(); rT(); rStat(); }
+
+function rH() {
+  $('hR').textContent = '⭐ ' + s.rep.toFixed(1);
+  $('hK').textContent = '🔧 ур.' + lvl();
+  $('hD').textContent = '📅 день ' + s.day;
+  $('hB').textContent = '💰 ' + fm(s.bal);
+}
+
+function tab(t, el) {
+  document.querySelectorAll('.sc').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('nav div').forEach(x => x.classList.remove('on'));
+  $('s-' + t).classList.add('on');
+  el.classList.add('on');
+}
+
+function cm(id) { $(id).style.display = 'none'; }
+
+function rD() {
+  const rent = LOCATIONS[s.loc].rent;
+  $('dayBtn').textContent = '⏭ день (' + Math.ceil(dl/1000) + 'с) · аренда −' + fm(rent);
+}
+
+function skip() { nd(); dl = 12000; rD(); }
+
+setInterval(() => {
+  if(!s || $('menu').style.display !== 'none' || ['chatM','bM','goM'].some(i => $(i).style.display === 'flex')) return;
+  dl -= 1000;
+  if(dl <= 0) { nd(); dl = 12000; }
+  rD();
+}, 1000);
+
+// Авто-мастер и пассивный доход филиалов
+setInterval(() => {
+  if (!s) return;
+  // Пассивный доход от филиалов
+  if (s.branches > 0) {
+    const branchIncome = s.branches * 15000;
+    s.bal += branchIncome;
+    s.stats.earned += branchIncome;
+  }
+  
+  // Авто-ремонт джуниором
+  if (s.emp.master) {
+    const target = s.inv.find(i => !i.done && i.open && i.br.length > 0);
+    if (target) {
+      const broken = target.br[0];
+      if (s.parts[broken] > 0) {
+        s.parts[broken]--;
+        target.br = target.br.filter(b => b !== broken);
+        toast(`👨‍🔧 Помощник починил ${P[broken].n} в ${target.name}`);
+        save(); rAll();
+      }
+    }
+  }
+}, 15000);
+
+function nd() {
+  s.day++;
+  const rent = LOCATIONS[s.loc].rent;
+  let totalCost = rent;
+  
+  if (s.webActive) totalCost += 5000;
+  s.bal -= totalCost;
+  
+  s.market.splice(0, 2);
+  while(s.market.length < (s.emp.courier ? 6 : 4)) newItem();
+  
+  if (Math.random() < 0.6) {
+    s.auctions = [];
+    newAuction();
+  }
+  
+  if (Math.random() < 0.5) {
+    s.darkMarket = [];
+    for(let i=0; i<2; i++) newDarkItem();
+  }
+  
+  if (s.webActive && Math.random() < 0.8) {
+    newItem(); // Сайт привлекает доп устройство
+    toast('🌐 Через онлайн-сайт скупки поступила новая заявка!');
+  }
+  
+  if (s.clients.length < 4) newClient();
+  
+  save(); rAll();
+  toast('🌙 День ' + s.day + ': Расходы (аренда/реклама) −' + fm(totalCost));
+  
+  if(s.bal < 0) {
+    $('goD').textContent = s.day;
+    $('goM').style.display = 'flex';
+    try { localStorage.removeItem(K); } catch(e){}
+  }
+}
+
+function rM() {
+  $('mT').textContent = '🛒 ' + CFG[s.c].n;
+  rD();
+  
+  $('mL').innerHTML = s.market.map(i => `
+    <div class="c">
+      <div class="t">${i.name}</div>
+      <div class="row">
+        <span class="tag ${i.lock?'warn':''}">${i.lock?'🔒 Залочен':'🔧 Неисправен'}</span>
+        ${i.wet ? '<span class="tag bad">💧 Залит</span>' : ''}
+      </div>
+      <div class="row" style="margin-top:4px">
+        <div class="pr">${fm(i.price)}</div>
+        <button class="b" onclick="openChat(${i.id})">Написать</button>
+      </div>
+    </div>
+  `).join('') || '<p class="mu">Объявлений нет.</p>';
+  
+  $('aucL').innerHTML = s.auctions.map(a => `
+    <div class="c" style="border-color:var(--ok)">
+      <div class="t">${a.name}</div>
+      <div class="mu">Устройств в лоте: ${a.itemsCount} шт.</div>
+      <div class="row" style="margin-top:4px">
+        <div class="pr">${fm(a.bid)}</div>
+        <button class="b ok" onclick="winAuction(${a.id})">Выкупить лот</button>
+      </div>
+    </div>
+  `).join('') || '<p class="mu">Нет активных аукционов.</p>';
+  
+  $('darkL').innerHTML = s.darkMarket.map(i => `
+    <div class="c" style="border-color:var(--neon-pink)">
+      <div class="t">${i.name}</div>
+      <div class="tag bad">⚠️ Кот в мешке</div>
+      <div class="row" style="margin-top:4px">
+        <div class="pr">${fm(i.price)}</div>
+        <button class="b bad" onclick="buyDark(${i.id})">Рискнуть</button>
+      </div>
+    </div>
+  `).join('') || '<p class="mu">Пусто.</p>';
+}
+
+function winAuction(id) {
+  const a = s.auctions.find(x => x.id == id);
+  if (!a || s.bal < a.bid) return toast('Не хватает денег');
+  s.bal -= a.bid;
+  s.auctions = s.auctions.filter(x => x.id != id);
+  
+  for(let k=0; k<a.itemsCount; k++) {
+    newItem();
+    const item = s.market.pop();
+    s.inv.push({ ...item, open: 0, bat: 1, t: {}, done: 0 });
+  }
+  toast(`⚖️ Аукцион выигран! Получено ${a.itemsCount} устройств на склад.`);
+  save(); rAll();
+}
+
+function buyDark(id) {
+  const it = s.darkMarket.find(m => m.id == id);
+  if (!it || s.bal < it.price) return toast('Не хватает денег');
+  s.bal -= it.price;
+  s.darkMarket = s.darkMarket.filter(m => m.id != id);
+  
+  if (it.isFake) {
+    toast('❌ Пустышка!');
+  } else if (it.isStolen && Math.random() < 0.6) {
+    const fine = Math.round(it.price * 1.5);
+    s.bal -= fine;
+    toast(`🚨 Полиция изъяла товар! Штраф: ${fm(fine)}`);
+  } else {
+    s.inv.push({ id: s.nid++, name: it.name, os: 'and', fw: 1, lock: 0, br: it.br, wet: 0, open: 0, bat: 1, t: {}, done: 0, val: it.val });
+    toast('✅ Успешно выкуплено!');
+  }
+  save(); rAll();
+}
+
+function say(w, t) {
+  $('chB').innerHTML += `<div class="m ${w=='s'?'ms':'mu2'}">${t}</div>`;
+  $('chB').scrollTop = 9e4;
+}
+
+function openChat(id) {
+  ch = s.market.find(m => m.id == id);
+  if(!ch) return;
+  $('chT').textContent = ch.name;
+  $('chB').innerHTML = '';
+  say('s', `Привет! Продаю ${ch.name} за ${fm(ch.price)}. Берёшь?`);
+  chA();
+  $('chatM').style.display = 'flex';
+}
+
+function chA() {
+  $('chA').innerHTML = `<button class="b ok" onclick="buy(${ch.id})">Купить за ${fm(ch.price)}</button>` +
+    (ch.tries > 0 && !ch.deal ? [10,20,30].map(p => `<button class="b g2" onclick="hag(${p})">Скинуть −${p}%</button>`).join('') : '');
+}
+
+function hag(p) {
+  const o = Math.round(ch.price * (1 - p/100));
+  say('u', `Отдадите за ${fm(o)}?`);
+  if(o >= ch.min) {
+    ch.price = o; ch.deal = 1;
+    say('s', 'Договорились!');
+  } else {
+    ch.tries--;
+    if(!ch.tries) {
+      say('s', 'Много сбрасываешь. Пока.');
+      s.market = s.market.filter(m => m.id != ch.id);
+      save(); rM();
+      setTimeout(() => cm('chatM'), 1200);
+      return;
+    }
+    ch.price = Math.max(ch.min, Math.round((ch.price + ch.min)/2));
+    say('s', `Много. Могу за ${fm(ch.price)}.`);
+  }
+  save(); chA();
+}
+
+function buy(id) {
+  const it = s.market.find(m => m.id == id);
+  if(!it) return cm('chatM');
+  if(s.bal < it.price) return toast('Не хватает денег');
+  s.bal -= it.price;
+  s.inv.push({ ...it, open: 0, bat: 1, t: {}, done: 0 });
+  s.market = s.market.filter(m => m.id != id);
+  toast('✅ Товар куплен');
+  cm('chatM'); save(); rAll();
+}
+
+function rC() {
+  $('cL').innerHTML = s.clients.map((c, x) => `
+    <div class="c">
+      <div class="t">${c.name}</div>
+      <div class="mu">${c.text}</div>
+      <div class="row">
+        <div class="pr">+${fm(c.pay)}</div>
+        <button class="b ok" onclick="acceptClient(${x})">Взять заказ</button>
+      </div>
+    </div>
+  `).join('') || '<p class="mu">Нет клиентов.</p>';
+  
+  $('webStatus').textContent = s.webActive ? '🟢 Сайт активен (-5000/д)' : '🔴 Выключен';
+}
+
+function toggleWeb() {
+  s.webActive = !s.webActive;
+  toast(s.webActive ? '🌐 Онлайн-сайт запущен!' : '🌐 Сайт отключен');
+  save(); rC();
+}
+
+function acceptClient(x) {
+  const c = s.clients[x];
+  s.inv.push({
+    id: s.nid++, name: `[Заказ] ${c.name}`, os: 'and', fw: 1, lock: 0,
+    br: [c.prob], wet: 0, open: 0, bat: 1, t: {}, done: 0, val: c.pay, isClient: true
+  });
+  s.clients.splice(x, 1);
+  toast('💼 Заказ взят');
+  save(); rAll();
+}
+
+function stat(i) {
+  if (i.done) return '✅ Готов к продаже';
+  if (!i.open) return '🔒 Не вскрывался';
+  let res = [];
+  if (i.wet) res.push('💧 Залит');
+  i.br.filter(b => i.t[b]).forEach(b => res.push('❌ ' + P[b].n));
+  if (i.lock) res.push('🔒 Нужна прошивка');
+  return res.join(', ') || 'идёт диагностика';
+}
+
+function rI() {
+  const filter = $('invSort') ? $('invSort').value : 'all';
+  let list = s.inv;
+  if (filter === 'ready') list = list.filter(i => i.done);
+  if (filter === 'broken') list = list.filter(i => !i.done);
+
+  $('iL').innerHTML = list.map((i) => {
+    const realIdx = s.inv.indexOf(i);
+    return `
+    <div class="c">
+      <div class="t">${i.name}</div>
+      <div class="mu">${stat(i)}</div>
+      <div class="row">
+        <button class="b" onclick="bench(${realIdx})">🛠 Верстак</button>
+        <button class="b ok" onclick="sell(${realIdx})">${i.done ? 'Продать' : 'На запчасти'} ${fm(i.done ? i.val * (0.9 + s.rep*0.02) : i.val * 0.35)}</button>
+      </div>
+    </div>`;
+  }).join('') || '<p class="mu">Склад пуст.</p>';
+}
+
+function sell(x) {
+  const i = s.inv[x];
+  let p = i.done ? Math.round(i.val * (0.9 + s.rep*0.02)) : Math.round(i.val * 0.35);
+  if (i.isClient && i.done) { s.rep = Math.min(5.0, s.rep + 0.2); toast('⭐ Репутация +0.2'); }
+  else if (i.done) { s.rep = Math.min(5.0, s.rep + 0.05); }
+  
+  s.bal += p; s.stats.earned += p;
+  if (i.done) s.stats.fixed++;
+  s.inv.splice(x, 1);
+  toast('Продано за ' + fm(p));
+  save(); rAll();
+}
+
+function bench(x) {
+  s.bi = x; bn = { n: 0 }; fl = null;
+  rB(); $('bM').style.display = 'flex';
+}
+
+function clB() {
+  if(fl && fl.q > 0 && fl.q < 100) brick();
+  clearInterval(ft); fl = null; cm('bM');
+}
+
+function rB() {
+  const i = s.inv[s.bi];
+  if(!i) return cm('bM');
+  $('bT').textContent = i.name;
+  let h = '';
+  
+  if (!i.open) {
+    h = bn.n < 4 ? `
+      <p class="mu">Открути винты: ${bn.n}/4</p>
+      <div class="ph" style="flex-direction:row;justify-content:space-around;padding:20px 10px">
+        ${[0,1,2,3].map(k=>`<i class="sw ${k<bn.n?'off':''}" onclick="bn.n++;rB()"></i>`).join('')}
+      </div>` : `
+      <div class="ph" style="align-items:center;padding:20px">
+        <button class="b" onclick="pry()">Поддеть крышку / экран</button>
+      </div>`;
+  } else if (i.done) {
+    h = '<p style="color:var(--ok)">✨ Полностью исправно!</p>';
+  } else {
+    h = `<div class="ph">`;
+    if (i.wet) {
+      h += `
+      <div class="cp bd">
+        <b>💧 Залитие плагины / окислы</b>
+        <button class="b warn" onclick="cleanBath()">🛁 Ультразвуковая ванна</button>
+      </div>`;
+    }
+    
+    // Схемы плат / Поиск КЗ
+    h += `
+      <div class="cp">
+        <b>🔍 Boardview & Поиск КЗ</b>
+        <span>Интерактивная схема цепи питания платки.</span>
+        <button class="b g2" onclick="openBoardview()">Открыть тепловизор</button>
+      </div>`;
+    
+    h += Object.keys(P).map(p => {
+      const bd = i.br.includes(p);
+      return `
+      <div class="cp ${i.t[p] ? (bd ? 'bd' : 'gd') : ''}">
+        <b>${pn(p)}</b>
+        <span>${i.t[p] ? (bd ? '❌ Требует замены' : '✅ Исправен') : '❓ Не проверен'}</span>
+        <div class="row">
+          <button class="b g2" onclick="tst('${p}')">Тест</button>
+          ${i.t[p] && bd ? `<button class="b" onclick="rep('${p}')">Заменить (${s.parts[p]})</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    
+    h += `
+      <div class="cp">
+        <b>🔌 Батарея / Питание: ${i.bat ? 'Подключена' : 'Отключена'}</b>
+        <button class="b g2" onclick="bt()">${i.bat ? 'Отключить' : 'Подключить'}</button>
+      </div>
+    </div>`;
+    
+    if (i.lock) h += `<button class="b bad" onclick="flash()">⚡ Перепрошивка DFU</button>`;
+    h += `<button class="b ok" onclick="asm()">🔩 Собрать устройство</button>`;
+  }
+  
+  $('bI').innerHTML = h;
+}
+
+function openBoardview() {
+  $('bI').innerHTML = `
+    <p class="mu">Тепловизор: найди греющийся короткозамкнутый чип и выпайго его кликом!</p>
+    <div class="ph" style="align-items:center;padding:30px;background:#200">
+      <button class="b bad" onclick="fixShortCircuit()">🔥 Выпаять пробитый конденсатор</button>
+    </div>`;
+}
+
+function fixShortCircuit() {
+  const i = s.inv[s.bi];
+  if (i.br.includes('board')) i.br = i.br.filter(b => b !== 'board');
+  i.t.board = 1;
+  toast('⚡ Короткое замыкание устранено по схеме плат!');
+  rB();
+}
+
+function pry() {
+  const i = s.inv[s.bi];
+  i.open = 1; i.bat = 1; i.t = {};
+  if (i.hid) { i.br.push(i.hid); toast('🔍 Скрытый косяк: ' + P[i.hid].n); i.hid = null; }
+  if (s.eq.meter) { Object.keys(P).forEach(p => i.t[p] = 1); toast('⚡ Мультиметр проверил цепи'); }
+  save(); rI(); rB();
+}
+
+function tst(p) { const i = s.inv[s.bi]; i.t[p] = 1; save(); rI(); rB(); }
+function bt() { const i = s.inv[s.bi]; i.bat = !i.bat; rB(); }
+
+function cleanBath() {
+  if (!s.eq.bath) return toast('Нужна УЗ-ванна из магазина прокачки!');
+  const i = s.inv[s.bi];
+  i.wet = 0; toast('🧼 Плата отмыта!'); save(); rB();
+}
+
+function rep(p) {
+  const i = s.inv[s.bi];
+  if (s.parts[p] <= 0) return toast('Нет детали на складе!');
+  s.parts[p]--;
+  if (i.bat && Math.random() < 0.5) {
+    toast('⚡ Забыл отключить батарею! Пробой платы.');
+    if (!i.br.includes('board')) i.br.push('board');
+    i.t.board = 1;
+  }
+  const failRisk = s.eq.tools ? 0.02 : 0.14;
+  if (Math.random() < failRisk) { toast('💥 Сорвал шлейф!'); }
+  else { i.br = i.br.filter(b => b !== p); s.xp++; toast('🔧 Заменено'); }
+  save(); rAll(); rB();
+}
+
+function asm() {
+  const i = s.inv[s.bi];
+  if (i.wet) return toast('Плата залита!');
+  if (i.br.length) return toast('Не всё починено!');
+  if (i.lock) return toast('Залочен!');
+  if (!i.bat) return toast('Подключи батарею!');
+  i.done = 1; s.xp += 2; toast('📱 Готово!');
+  save(); rAll(); rB();
+}
+
+function flash() {
+  const i = s.inv[s.bi];
+  if (i.br.includes('board')) return toast('Плата неисправна.');
+  if (!i.bat) return toast('Подключи батарею!');
+  fl = { p: 0, d: 1, w: 16 + lvl()*2, q: 0 };
+  dfu();
+}
+
+function dfu() {
+  clearInterval(ft);
+  $('bI').innerHTML = `
+    <p class="mu">Поймай маркер в зелёной зоне:</p>
+    <div class="bar">
+      <i class="zn" style="left:${50 - fl.w/2}%;width:${fl.w}%"></i>
+      <i class="mk" id="mk"></i>
+    </div>
+    <button class="b" onclick="hit()">Старт прошивки</button>`;
+  ft = setInterval(() => {
+    fl.p += fl.d * 3.5;
+    if (fl.p >= 100 || fl.p <= 0) fl.d *= -1;
+    const m = $('mk'); if (m) m.style.left = fl.p + '%';
+  }, 30);
+}
+
+function hit() {
+  if (Math.abs(fl.p - 50) <= fl.w/2) {
+    clearInterval(ft);
+    const i = s.inv[s.bi];
+    const fwList = i.os == 'pc' ? FW.pc : FW[i.os];
+    $('bI').innerHTML = `
+      <p>Выбери ПО:</p>
+      ${fwList.map((f, k) => `<button class="b g2" style="margin-top:6px" onclick="go(${k})">${f}</button>`).join('')}`;
+  } else { toast('Мимо зоны DFU'); }
+}
+
+function brick() {
+  const i = s.inv[s.bi];
+  clearInterval(ft);
+  if (!i.br.includes('board')) i.br.push('board');
+  i.t.board = 1;
+  toast('🧱 Ошибка прошивки!');
+  fl = null; save(); rAll(); rB();
+}
+
+function go(k) {
+  const i = s.inv[s.bi];
+  if (k !== i.fw) return brick();
+  fl.q = 0; fl.g = 25 + Math.random()*40; fl.o = 0; fl.gd = 0;
+  $('bI').innerHTML = `
+    <div class="bar"><i class="pg" id="pg"></i></div>
+    <p id="fmsg" class="mu" style="margin-top:8px">Прошивка...</p>
+    <button class="b bad" id="rc" style="display:none" onclick="fl.o=0;this.style.display='none'">🔌 Кабель!</button>`;
+  ft = setInterval(() => {
+    if (!fl) return clearInterval(ft);
+    fl.q += 1.5;
+    $('pg').style.width = Math.min(100, fl.q) + '%';
+    if (fl.q >= fl.g && !fl.gd) { fl.gd = 1; fl.o = 1; fl.t = Date.now(); $('rc').style.display = 'block'; }
+    if (fl.o && Date.now() - fl.t > 1400) return brick();
+    if (fl.q >= 100 && !fl.o) {
+      clearInterval(ft); i.lock = 0; s.xp += 3; s.stats.flashed++;
+      fl = null; toast('✅ Прошито успешно!');
+      save(); rAll(); rB();
+    }
+  }, 50);
+}
+
+function rP() {
+  $('pS').textContent = Object.keys(P).map(k => `${P[k].n}: ${s.parts[k]}шт`).join(' • ');
+  $('pL').innerHTML = Object.keys(P).map(p => `
+    <div class="c">
+      <div class="t">${pn(p)}</div>
+      <div class="pr">${fm(P[p].p)}</div>
+      <button class="b" onclick="bp('${p}')">Купить</button>
+    </div>
+  `).join('');
+}
+
+function bp(p) {
+  if (s.bal < P[p].p) return toast('Не хватает денег');
+  s.bal -= P[p].p; s.parts[p]++;
+  toast('📦 Деталь куплена');
+  save(); rAll();
+}
+
+function rU() {
+  const curLoc = LOCATIONS[s.loc];
+  const nextLoc = LOCATIONS[s.loc + 1];
+  $('locTitle').textContent = 'Точка: ' + curLoc.n;
+  $('locDesc').textContent = `${curLoc.desc} (Аренда: ${fm(curLoc.rent)}/день)`;
+  if (nextLoc) { $('locCost').textContent = fm(nextLoc.cost); $('locBtn').style.display = 'inline-block'; }
+  else { $('locCost').textContent = 'МАКС.'; $('locBtn').style.display = 'none'; }
+  
+  $('branchInfo').textContent = `Филиалов открыто: ${s.branches} • Пассивный доход: +${fm(s.branches * 15000)}/день`;
+  
+  const eqData = [
+    { id: 'station', n: 'Паяльная станция', p: 40000, d: 'Ускоряет ремонт' },
+    { id: 'bath', n: 'Ультразвуковая ванна', p: 25000, d: 'Очистка залитых плат' },
+    { id: 'meter', n: 'Мультиметр-Автомат', p: 30000, d: 'Авто-тест цепей' },
+    { id: 'tools', n: 'Проф. отвёртки', p: 15000, d: 'Меньше риска сорвать шлейф' }
+  ];
+  $('eqL').innerHTML = eqData.map(e => `
+    <div class="c">
+      <div class="t">${e.n}</div>
+      <div class="mu">${e.d}</div>
+      <div class="row">
+        <div class="pr">${s.eq[e.id] ? 'ЕСТЬ' : fm(e.p)}</div>
+        <button class="b" ${s.eq[e.id] ? 'disabled' : ''} onclick="buyEq('${e.id}', ${e.p})">Купить</button>
+      </div>
+    </div>
+  `).join('');
+  
+  const empData = [
+    { id: 'courier', n: 'Курьер на мопеде', p: 35000, d: '+2 объявления на рынке' },
+    { id: 'master', n: 'Младший мастер', p: 80000, d: 'Авто-починка на складе' }
+  ];
+  $('empL').innerHTML = empData.map(e => `
+    <div class="c">
+      <div class="t">${e.n}</div>
+      <div class="mu">${e.d}</div>
+      <div class="row">
+        <div class="pr">${s.emp[e.id] ? 'РАБОТАЕТ' : fm(e.p)}</div>
+        <button class="b" ${s.emp[e.id] ? 'disabled' : ''} onclick="buyEmp('${e.id}', ${e.p})">Нанять</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function upgLoc() {
+  const nextLoc = LOCATIONS[s.loc + 1];
+  if (!nextLoc || s.bal < nextLoc.cost) return toast('Не хватает денег');
+  s.bal -= nextLoc.cost; s.loc++;
+  toast('🎉 Переехали в ' + nextLoc.n);
+  save(); rAll();
+}
+
+function buyBranch() {
+  const cost = 300000;
+  if (s.bal < cost) return toast('Нужно 300 000 для филиала!');
+  s.bal -= cost; s.branches++;
+  toast('🏢 Новый филиал сети открыт!');
+  save(); rAll();
+}
+
+function buyEq(id, price) {
+  if (s.bal < price) return toast('Не хватает денег');
+  s.bal -= price; s.eq[id] = 1;
+  toast('🛠 Установлено!'); save(); rAll();
+}
+
+function buyEmp(id, price) {
+  if (s.bal < price) return toast('Не хватает денег');
+  s.bal -= price; s.emp[id] = 1;
+  toast('👨‍🔧 Нанят!'); save(); rAll();
+}
+
+function playM() {
+  rT();
+  if(!s.music || !tracks.length) return;
+  const t = tracks[s.tr] || tracks[0];
+  if(au.dataset.u !== t.u) { au.src = t.u; au.dataset.u = t.u; }
+  au.play().catch(() => {});
+}
+
+function addF(fl) {
+  [...fl].forEach(f => tracks.push({ n: f.name.replace(/\.[^.]+$/, ''), u: URL.createObjectURL(f) }));
+  if (tracks.length && !s.music) pick(tracks.length - fl.length); else rT();
+}
+
+function addU() {
+  const u = $('ur').value.trim();
+  const n = $('tTitle').value.trim() || u.split('/').pop().split('?')[0] || 'Трек';
+  if(!u) return toast('Вставь ссылку');
+  tracks.push({ n, u });
+  $('ur').value = ''; $('tTitle').value = '';
+  save(); if(!s.music) pick(tracks.length - 1); else rT();
+}
+
+function loadPresets() {
+  PRESETS.forEach(p => { if (!tracks.some(t => t.u === p.u)) tracks.push(p); });
+  toast('🎵 Треки загружены'); save(); rT();
+}
+
+function rT() {
+  const t = tracks[s.tr];
+  $('tN').textContent = t ? (s.music ? '▶ ' : '⏸ ') + t.n : 'Плейлист пуст';
+  $('tB').textContent = s.music ? '⏸ Пауза' : '▶ Играть';
+  $('tL').innerHTML = tracks.map((x, i) => `
+    <div class="c" style="padding:8px 12px;${i==s.tr?'border-color:var(--acc)':''}">
+      <div class="row">
+        <div class="t" style="font-size:12px;cursor:pointer" onclick="pick(${i})">${x.n}</div>
+        <button class="b bad" style="padding:4px 8px;font-size:10px" onclick="delTrack(${i})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function delTrack(i) { tracks.splice(i, 1); if (s.tr >= tracks.length) s.tr = 0; save(); rT(); }
+function pick(i) { s.tr = i; s.music = true; save(); playM(); }
+function nt() { if(tracks.length) pick((s.tr + 1) % tracks.length); }
+function tg() {
+  if(!tracks.length) return toast('Добавь треки');
+  s.music = !s.music; save(); s.music ? playM() : au.pause(); rT();
+}
+
+function rStat() {
+  if (!s.stats) s.stats = { earned: 0, fixed: 0, flashed: 0 };
+  $('stBox').innerHTML = `
+    <div class="mu">Заработано всего: <b>${fm(s.stats.earned)}</b></div>
+    <div class="mu">Отремонтировано: <b>${s.stats.fixed} шт.</b></div>
+    <div class="mu">Прошито через DFU: <b>${s.stats.flashed} шт.</b></div>
+    <div class="mu">Сеть филиалов: <b>${s.branches} шт.</b></div>
+  `;
+}
+</script>
+</body>
+</html>
